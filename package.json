@@ -1,0 +1,20 @@
+{
+  "name": "quanvaulte-be",
+  "version": "1.0.0",
+  "description": "express backend for quanvaulte platform",
+  "homepage": "https://github.com/Quanvaulte/quanvaulte-BE#readme",
+  "bugs": {
+    "url": "https://github.com/Quanvaulte/quanvaulte-BE/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Quanvaulte/quanvaulte-BE.git"
+  },
+  "license": "ISC",
+  "author": "clement Idemudo",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
