@@ -1,0 +1,191 @@
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import express from "express";
+import User from "../models/user.js";
+import authMiddleware, { createToken } from "../middleware/authMiddleware.js";
+
+const router = express.Router();
+
+/**
+ * @swagger
+ * tags:
+ *   name: Auth
+ *   description: Authentication management
+ */
+
+// create auth routes
+/**
+ * @swagger
+ * /auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             example:
+ *               email: "clement@gmail.com"
+ *               password: "password123"
+ *     responses:
+ *       201:
+ *         description: User registered successfully
+ * */
+
+// register user
+router.post("/register", async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ msg: "Please provide email and password" });
+  }
+
+  try {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ msg: "User already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.create({
+      ...req.body,
+      password: hashedPassword,
+    });
+    res.status(201).json({ msg: "user created" });
+  } catch (error) {
+    res.status(500).json({ msg: "Server error", error });
+  }
+});
+/**
+ * @swagger
+ * tags:
+ *   name: Auth
+ *   description: Authentication management
+ */
+
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     summary: Login a user and get JWT token
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: "clement@gmail.com"
+ *               password:
+ *                 type: string
+ *                 example: "password123"
+ *     responses:
+ *       200:
+ *         description: Successful login
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: JWT token
+ *       401:
+ *         description: Unauthorized (invalid credentials)
+ */
+// login user
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ msg: "Please provide email and password" });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(401).json({ msg: "invalid credentials" });
+    const compare_pswd = await bcrypt.compare(password, user.password);
+    if (!compare_pswd) {
+      return res.status(401).json({ msg: "invalid credentials" });
+    }
+
+    // generate token
+    const token = createToken(user);
+    res.status(200).json({ msg: "login successfully", token: token });
+  } catch (error) {
+    res.status(500).json({ msg: "Server error", error });
+  }
+});
+
+/**
+ * @swagger
+ * /auth/forgot-password:
+ *   post:
+ *     summary: Request password reset
+ *     description: Endpoint to request for password reset, email is required
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             example:
+ *               email: "clement@gmail.com"
+ *     responses:
+ *       200:
+ *         description: reset link sent to email
+ *       400:
+ *         description: request email does not exist
+
+ * */
+// forget password
+router.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(400).json({ error: "email does not exist" });
+  }
+
+  const token = createToken(user, 11);
+  const reset_link = `${req.protocol}://${req.get(
+    "host"
+  )}/auth/reset-password/${token}`;
+
+  // display link on console for now
+  console.log("password request processed, reset link=", reset_link);
+  // send email
+  res.status(200).json({ msg: "check email for reset link" });
+});
+
+// password reset
+router.post("/reset-password/:token", async (req, res) => {
+  console.log("password reset route hit");
+  const { token } = req.params;
+  const { password } = req.body;
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(400).json({ error: "invalid user" });
+    }
+    user.password = password;
+    await user.save();
+    res.status(200).json({ msg: "password reset successfull" });
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return res
+        .status(400)
+        .json({ err: "token has expired, pls request new reset link" });
+    }
+    res.status(400).json({ err: "Invalid or expired token" });
+  }
+});
+
+export default router;

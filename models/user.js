@@ -1,5 +1,18 @@
 import mongoose from "mongoose";
 
+const groupSchema = new mongoose.Schema({
+  name: { type: String, required: true, unique: true },
+  permissions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Permission" }],
+});
+
+const Group = mongoose.model("Group", groupSchema);
+
+const permissionsSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+});
+
+const Permission = mongoose.model("Permission", permissionsSchema);
+
 const userSchema = new mongoose.Schema(
   {
     username: String,
