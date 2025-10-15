@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import express from "express";
 import User from "../models/user.js";
-import authMiddleware, { createToken } from "../middleware/authMiddleware.js";
+import authMiddleware, { createToken } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 

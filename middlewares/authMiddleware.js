@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
-export default authMiddleware = (req, res, next) => {
+const authMiddleware = (req, res, next) => {
   // check for token in headers
   const token = req.headers["authorization"]?.split(" ")[1];
   if (!token) return res.status(401).json({ msg: "unauthorized, no token" });
@@ -15,7 +15,7 @@ export default authMiddleware = (req, res, next) => {
     return res.status(401).json({ msg: "unauthorized, invalid/expired token" });
   }
 };
-
+export default authMiddleware;
 // create jwt token
 export const createToken = (user, is_password_reset_token = 0) => {
   if (is_password_reset_token) {
