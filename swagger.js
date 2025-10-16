@@ -13,9 +13,9 @@ const options = {
       {
         url: "http://localhost:5000", // adjust for prod
       },
-      {
-        url: "https://iot-server-9u9o.onrender.com", // adjust for prod
-      },
+      // {
+      //   url: "https://iot-server-9u9o.onrender.com", // adjust for prod
+      // },
     ],
     components: {
       securitySchemes: {
