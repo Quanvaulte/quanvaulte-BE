@@ -18,9 +18,9 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // authentication routes
 app.use("/auth", authRoutes);
 
-app.listen(process.env.PORT, () =>
-  console.log("server running on port", process.env.PORT)
-);
+// app.listen(process.env.PORT, () =>
+//   console.log("server running on port", process.env.PORT)
+// );
 
 // // running on local ip
 // app.listen(5000, "0.0.0.0", () => console.log("running on local ip"));
