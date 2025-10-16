@@ -24,3 +24,6 @@ app.listen(process.env.PORT, () =>
 
 // // running on local ip
 // app.listen(5000, "0.0.0.0", () => console.log("running on local ip"));
+
+// for compactibility with vercel
+export default app;
