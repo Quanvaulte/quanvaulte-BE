@@ -14,7 +14,7 @@ const options = {
         url: "http://localhost:5000", // adjust for prod
       },
       {
-        url: "https://quanvaulte-51ebs8avn-clement-idemudos-projects.vercel.app", // adjust for prod
+        url: "https://quanvaulte-be.onrender.com/", // adjust for prod
       },
     ],
     components: {
