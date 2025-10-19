@@ -5,7 +5,6 @@ import User, { Verification } from "../models/user.js";
 import authMiddleware, { createToken } from "../middlewares/authMiddleware.js";
 import { generateVerificationCode } from "../utils/generateVerificationCode.js";
 import { sendEmail } from "../utils/sendEmail.js";
-import { useId } from "react";
 
 const router = express.Router();
 
@@ -100,7 +99,7 @@ router.post("/confirm-email", async (req, res) => {
     if (!record || record.expiresAt < Date.now()) {
       return res.status(400).json({ msg: "Invalid or expired token" });
     }
-    await User.findOneAndUpdate(useId, { is_active: true });
+    await User.findOneAndUpdate(userId, { is_active: true });
     return res.status(200).json({ msg: "token verified successfully" });
   } catch (error) {
     console.log(error);
