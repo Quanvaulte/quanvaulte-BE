@@ -50,3 +50,14 @@ userSchema.pre("save", async function (next) {
 
 const User = mongoose.model("User", userSchema);
 export default User;
+
+const verificationSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  code: { type: String, required: true },
+  expiresAt: { type: Date, required: true },
+});
+
+// this automatically delete token after expiration
+verificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+export const Verification = mongoose.model("Verification", verificationSchema);

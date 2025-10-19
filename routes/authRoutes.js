@@ -68,7 +68,7 @@ router.post("/register", async (req, res) => {
 
 /**
  * @swagger
- * /auth/confirm-email
+ * /auth/confirm-email:
  *   post:
  *     summary: Confirm email by verifying unique sent token
  *     tags: [Auth]
