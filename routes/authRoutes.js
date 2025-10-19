@@ -27,6 +27,7 @@ const router = express.Router();
  *           schema:
  *             example:
  *               email: "clement@gmail.com"
+ *               is_admin: false
  *               password: "password123"
  *     responses:
  *       201:
@@ -46,13 +47,14 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ msg: "User already exists" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({
       ...req.body,
-      password: hashedPassword,
+      password: password,
     });
     res.status(201).json({ msg: "user created" });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ msg: "Server error", error });
   }
 });

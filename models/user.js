@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-
+import bcrypt from "bcrypt";
 const groupSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
   permissions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Permission" }],
@@ -35,11 +35,13 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// used to hash reset password
+// used to hash reset password, turn out to work even when not password changed
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
+    console.log("new user request no password update");
     return next();
   }
+  console.log("password reset request made");
   this.password = await bcrypt.hash(this.password, 10);
   next();
 });
