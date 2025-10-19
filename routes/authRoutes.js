@@ -1,8 +1,11 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import express from "express";
-import User from "../models/user.js";
+import User, { Verification } from "../models/user.js";
 import authMiddleware, { createToken } from "../middlewares/authMiddleware.js";
+import { generateVerificationCode } from "../utils/generateVerificationCode.js";
+import { sendEmail } from "../utils/sendEmail.js";
+import { useId } from "react";
 
 const router = express.Router();
 
@@ -87,8 +90,22 @@ router.post("/register", async (req, res) => {
  */
 // confirm user
 router.post("/confirm-email", async (req, res) => {
-  const { token } = req.body;
-  // check token for associated user > set the user.is_active=true < else return expired token
+  try {
+    const { token } = req.body;
+    const { userId } = req.params;
+
+    // check token for associated user > set the user.is_active=true < else return expired token
+    const record = await Verification.findOne({ userId, code: token });
+
+    if (!record || record.expiresAt < Date.now()) {
+      return res.status(400).json({ msg: "Invalid or expired token" });
+    }
+    await User.findOneAndUpdate(useId, { is_active: true });
+    return res.status(200).json({ msg: "token verified successfully" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ msg: "verification failed", err: error });
+  }
 });
 
 /**
@@ -187,16 +204,22 @@ router.post("/forgot-password", async (req, res) => {
     return res.status(400).json({ error: "email does not exist" });
   }
 
-  // generate a 6-8 character (random and unique perharps) and send as email
-  // const token = createToken(user, 11);
-  // const reset_link = `${req.protocol}://${req.get(
-  //   "host"
-  // )}/auth/reset-password/${token}`;
+  try {
+    // generate a 6-8 character (random and unique perharps) and send as email
+    const code = generateVerificationCode();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); //expires in 5mins
 
-  // display link on console for now
-  // console.log("password request processed, reset link=", reset_link);
-  // send email
-  res.status(200).json({ msg: "check email for reset link" });
+    await Verification.create({ userId: user.id, code, expiresAt });
+    await sendEmail(
+      email,
+      `your verification code is ${code}, please do not reveal to any person`
+    );
+
+    res.status(200).json({ msg: "check email for token" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ msg: "erro occured", err: error });
+  }
 });
 
 /**
