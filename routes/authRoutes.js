@@ -163,6 +163,50 @@ router.post("/forgot-password", async (req, res) => {
   // send email
   res.status(200).json({ msg: "check email for reset link" });
 });
+/**
+ * @swagger
+ * /auth/reset-password/{token}:
+ *   post:
+ *     summary: Reset password with a unique token appended in the URL
+ *     description: Endpoint that does the actual password reset using the token sent to the user's email.
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         description: JWT token sent to user's email for password reset
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - password
+ *             properties:
+ *               password:
+ *                 type: string
+ *                 example: "to God be the Glory"
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               example:
+ *                 msg: "password reset successful"
+ *       400:
+ *         description: Invalid or expired token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               example:
+ *                 err: "Invalid or expired token"
+ */
 
 // password reset
 router.post("/reset-password/:token", async (req, res) => {
