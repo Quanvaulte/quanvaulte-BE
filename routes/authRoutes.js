@@ -6,6 +6,12 @@ import authMiddleware, { createToken } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
+// registration flow
+// register (user.is_active=false) > confirm email (token sent to email) -user.is_active=true > login screen
+
+// reset password flow
+// forgotten password (registered email) > confirm email (token sent to email) (same as above confirm)> password reset screen (new_password) > success
+
 /**
  * @swagger
  * tags:
@@ -51,6 +57,7 @@ router.post("/register", async (req, res) => {
     const user = await User.create({
       ...req.body,
       password: password,
+      is_active: false, //user will need to confirm thier email b4 this is true
     });
     res.status(201).json({ msg: "user created" });
   } catch (error) {
@@ -58,6 +65,32 @@ router.post("/register", async (req, res) => {
     res.status(500).json({ msg: "Server error", error });
   }
 });
+
+/**
+ * @swagger
+ * /auth/confirm-email
+ *   post:
+ *     summary: Confirm email by verifying unique sent token
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             example:
+ *               token: "123xyz"
+ *     responses:
+ *       200:
+ *         description: user confirmed successfully
+ *       400:
+ *         description: invalid or expired token
+ */
+// confirm user
+router.post("/confirm-email", async (req, res) => {
+  const { token } = req.body;
+  // check token for associated user > set the user.is_active=true < else return expired token
+});
+
 /**
  * @swagger
  * tags:
@@ -124,6 +157,120 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// forget and password reset flows using 6-8 character token (not url token) sent to user email
+/**
+ * @swagger
+ * api/v2/auth/forgot-password:
+ *   post:
+ *     summary: Request password reset, recieve token in email
+ *     description: Endpoint to request for password reset, email is required
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             example:
+ *               email: "clement@gmail.com"
+ *     responses:
+ *       200:
+ *         description: reset token sent to email
+ *       400:
+ *         description: request email does not exist
+
+ * */
+// forget password
+router.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(400).json({ error: "email does not exist" });
+  }
+
+  // generate a 6-8 character (random and unique perharps) and send as email
+  // const token = createToken(user, 11);
+  // const reset_link = `${req.protocol}://${req.get(
+  //   "host"
+  // )}/auth/reset-password/${token}`;
+
+  // display link on console for now
+  // console.log("password request processed, reset link=", reset_link);
+  // send email
+  res.status(200).json({ msg: "check email for reset link" });
+});
+
+/**
+ * @swagger
+ * api/v2/auth/reset-password/:
+ *   post:
+ *     summary: Reset password, identify associated user with token or email
+ *     description: Endpoint that does the actual password reset using the token sent to the user's email.
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         description: JWT token sent to user's email for password reset
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - password
+ *             properties:
+ *               password:
+ *                 type: string
+ *                 example: "to God be the Glory"
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               example:
+ *                 msg: "password reset successful"
+ *       400:
+ *         description: Invalid or expired token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               example:
+ *                 err: "Invalid or expired token"
+ */
+
+// password reset
+router.post("/reset-password/:token", async (req, res) => {
+  console.log("password reset route hit");
+  const { token } = req.params;
+  const { password } = req.body;
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(400).json({ error: "invalid user" });
+    }
+    user.password = password;
+    await user.save();
+    res.status(200).json({ msg: "password reset successfull" });
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return res
+        .status(400)
+        .json({ err: "token has expired, pls request new reset link" });
+    }
+    res.status(400).json({ err: "Invalid or expired token" });
+  }
+});
+
+// forget and password reset flows using tokenized url sent to user email
 /**
  * @swagger
  * /auth/forgot-password:
@@ -163,6 +310,7 @@ router.post("/forgot-password", async (req, res) => {
   // send email
   res.status(200).json({ msg: "check email for reset link" });
 });
+
 /**
  * @swagger
  * /auth/reset-password/{token}:
