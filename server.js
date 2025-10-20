@@ -17,6 +17,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // authentication routes
 app.use("/auth", authRoutes);
+app.use("/api/v2/auth", authRoutes);
 
 app.listen(process.env.PORT, () =>
   console.log("server running on port", process.env.PORT)

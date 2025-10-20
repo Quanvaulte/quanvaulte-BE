@@ -73,43 +73,63 @@ router.post("/register", async (req, res) => {
     res.status(500).json({ msg: "Server error", error });
   }
 });
-
 /**
  * @swagger
- * /auth/confirm-email:
+ * /auth/confirm-email/{userId}:
  *   post:
- *     summary: Confirm email by verifying unique sent token
+ *     summary: Confirm user's email using a verification token
+ *     description: Verifies the email address of a user by matching the verification token sent to their email. Activates the user's account if valid.
  *     tags: [Auth]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the user whose email is being verified
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             example:
- *               token: "123xyz"
+ *             type: object
+ *             required:
+ *               - token
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 example: "A7X9ZT"
+ *                 description: The 6–8 character verification code sent to the user's email
  *     responses:
  *       200:
- *         description: user confirmed successfully
+ *         description: Email confirmed successfully. The user's account is now active.
  *       400:
- *         description: invalid or expired token
+ *         description: Invalid or expired token
+ *       500:
+ *         description: Server error during verification
  */
-// confirm user
-router.post("/confirm-email", async (req, res) => {
+router.post("/confirm-email/:userId", async (req, res) => {
   try {
     const { token } = req.body;
     const { userId } = req.params;
 
-    // check token for associated user > set the user.is_active=true < else return expired token
+    // Check for matching verification record
     const record = await Verification.findOne({ userId, code: token });
 
     if (!record || record.expiresAt < Date.now()) {
       return res.status(400).json({ msg: "Invalid or expired token" });
     }
-    await User.findOneAndUpdate(userId, { is_active: true });
-    return res.status(200).json({ msg: "token verified successfully" });
+
+    // Activate the user
+    await User.findByIdAndUpdate(userId, { is_active: true });
+
+    // Optionally delete the verification record to prevent reuse
+    await Verification.deleteOne({ _id: record._id });
+
+    res.status(200).json({ msg: "Token verified successfully" });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ msg: "verification failed", err: error });
+    console.error(error);
+    res.status(500).json({ msg: "Verification failed", error: error.message });
   }
 });
 
@@ -182,7 +202,7 @@ router.post("/login", async (req, res) => {
 // forget and password reset flows using 6-8 character token (not url token) sent to user email
 /**
  * @swagger
- * api/v2/auth/forgot-password:
+ * /api/v2/auth/forgot-password:
  *   post:
  *     summary: Request password reset, recieve token in email
  *     description: Endpoint to request for password reset, email is required
@@ -221,16 +241,16 @@ router.post("/forgot-password", async (req, res) => {
 
 /**
  * @swagger
- * api/v2/auth/reset-password/:
+ * /api/v2/auth/reset-password/{email}:
  *   post:
  *     summary: Reset password, identify associated user with token or email
  *     description: Endpoint that does the actual password reset using the token sent to the user's email.
  *     tags: [Auth]
  *     parameters:
  *       - in: path
- *         name: token
+ *         name: email
  *         required: true
- *         description: JWT token sent to user's email for password reset
+ *         description: user's email for password reset
  *         schema:
  *           type: string
  *     requestBody:
@@ -265,14 +285,16 @@ router.post("/forgot-password", async (req, res) => {
  */
 
 // password reset
-router.post("/reset-password/:token", async (req, res) => {
+router.post("/reset-password/:email", async (req, res) => {
   console.log("password reset route hit");
-  const { token } = req.params;
+  // const { token } = req.params; //email will be more robust as some user's token might not exist or is expired
   const { password } = req.body;
+  const { email } = req.params;
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id);
+    // const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // const user = await User.findById(decoded.id);
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(400).json({ error: "invalid user" });

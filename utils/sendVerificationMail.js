@@ -5,7 +5,7 @@ import { Verification } from "../models/user.js";
 export async function sendVerificationMail(user) {
   try {
     const code = generateVerificationCode();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // expires in 5 mins
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // expires in 5 mins
 
     // delete old codes for same user
     await Verification.deleteMany({ userId: user._id });
