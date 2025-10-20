@@ -35,6 +35,7 @@ const router = express.Router();
  *         application/json:
  *           schema:
  *             example:
+ *               name: "clement Aboy"
  *               email: "clement@gmail.com"
  *               is_admin: false
  *               password: "password123"
@@ -45,9 +46,11 @@ const router = express.Router();
 
 // register user
 router.post("/register", async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ msg: "Please provide email and password" });
+  const { name, email, password } = req.body;
+  if (!name || !email || !password) {
+    return res
+      .status(400)
+      .json({ msg: "Please provide name, email and password" });
   }
 
   try {
@@ -59,15 +62,18 @@ router.post("/register", async (req, res) => {
     // const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({
       ...req.body,
+      last_name: name.split(" ")[0],
+      first_name: name.split(" ")[1],
       password: password,
       is_active: false, //user will need to confirm thier email b4 this is true
     });
 
     // send email confirmation to mail
     await sendVerificationMail(user);
-    res
-      .status(201)
-      .json({ msg: "user created, check mail for email confirmation" });
+    res.status(201).json({
+      msg: "user created, check mail for email confirmation",
+      userId: user.id,
+    });
   } catch (error) {
     console.log(error);
     res.status(500).json({ msg: "Server error", error });
