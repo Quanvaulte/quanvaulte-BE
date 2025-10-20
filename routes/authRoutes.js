@@ -5,11 +5,12 @@ import User, { Verification } from "../models/user.js";
 import authMiddleware, { createToken } from "../middlewares/authMiddleware.js";
 import { generateVerificationCode } from "../utils/generateVerificationCode.js";
 import { sendEmail } from "../utils/sendEmail.js";
+import { sendVerificationMail } from "../utils/sendVerificationMail.js";
 
 const router = express.Router();
 
 // registration flow
-// register (user.is_active=false) > confirm email (token sent to email) -user.is_active=true > login screen
+// register (user.is_active=false, trigger sending confirm token) > confirm email (token sent to email) -user.is_active=true > login screen
 
 // reset password flow
 // forgotten password (registered email) > confirm email (token sent to email) (same as above confirm)> password reset screen (new_password) > success
@@ -61,7 +62,12 @@ router.post("/register", async (req, res) => {
       password: password,
       is_active: false, //user will need to confirm thier email b4 this is true
     });
-    res.status(201).json({ msg: "user created" });
+
+    // send email confirmation to mail
+    await sendVerificationMail(user);
+    res
+      .status(201)
+      .json({ msg: "user created, check mail for email confirmation" });
   } catch (error) {
     console.log(error);
     res.status(500).json({ msg: "Server error", error });
@@ -195,29 +201,21 @@ router.post("/login", async (req, res) => {
  *         description: request email does not exist
 
  * */
-// forget password
 router.post("/forgot-password", async (req, res) => {
-  const { email } = req.body;
-  const user = await User.findOne({ email });
-  if (!user) {
-    return res.status(400).json({ error: "email does not exist" });
-  }
-
   try {
-    // generate a 6-8 character (random and unique perharps) and send as email
-    const code = generateVerificationCode();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); //expires in 5mins
+    const { email } = req.body;
+    const user = await User.findOne({ email });
 
-    await Verification.create({ userId: user.id, code, expiresAt });
-    await sendEmail(
-      email,
-      `your verification code is ${code}, please do not reveal to any person`
-    );
+    if (!user) {
+      return res.status(400).json({ error: "Email does not exist" });
+    }
 
-    res.status(200).json({ msg: "check email for token" });
+    await sendVerificationMail(user);
+
+    res.status(200).json({ msg: "Check your email for verification code" });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ msg: "erro occured", err: error });
+    console.error(error);
+    res.status(500).json({ msg: "An error occurred", error: error.message });
   }
 });
 
