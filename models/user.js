@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
+import { sendVerificationMail } from "../utils/sendVerificationMail";
 const groupSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
   permissions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Permission" }],
@@ -46,6 +47,14 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
+// post save hook to send email confirmation
+userSchema.post("save", async function (doc, next) {
+  // check if new user
+  if (this.isModified("email") && this.is_active == false) {
+    console.log("new user created");
+    // await sendVerificationMail(this)
+  }
+});
 // user profile schema
 
 const User = mongoose.model("User", userSchema);

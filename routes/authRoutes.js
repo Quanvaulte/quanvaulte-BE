@@ -68,8 +68,8 @@ router.post("/register", async (req, res) => {
       is_active: false, //user will need to confirm thier email b4 this is true
     });
 
-    // send email confirmation to mail
-    await sendVerificationMail(user);
+    // send email confirmation to mail... moved this to post save hook for better code performance
+    // await sendVerificationMail(user);
     res.status(201).json({
       msg: "user created, check mail for email confirmation",
       userId: user.id,

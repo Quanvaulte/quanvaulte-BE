@@ -2,7 +2,7 @@ import { sendEmail } from "./sendEmail.js";
 import { generateVerificationCode } from "./generateVerificationCode.js";
 import { Verification } from "../models/user.js";
 
-export async function sendVerificationMail(user) {
+export async function sendVerificationMail(user, is_dummy = true) {
   try {
     const code = generateVerificationCode();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // expires in 5 mins
@@ -13,13 +13,15 @@ export async function sendVerificationMail(user) {
     // store new verification record
     await Verification.create({ userId: user._id, code, expiresAt });
 
-    // send mail
-    await sendEmail(
-      user.email,
-      `Your verification code is ${code}. Please do not share this with anyone.`
-    );
-
-    return true; // success indicator
+    // only send mail when not dummy else just return the token for testing sake
+    if (!is_dummy) {
+      await sendEmail(
+        user.email,
+        `Your verification code is ${code}. Please do not share this with anyone.`
+      );
+    }
+    return { token: code };
+    // return true; // success indicator
   } catch (error) {
     console.error("Error sending verification email:", error);
     throw new Error(`Failed to send verification email: ${error.message}`);
