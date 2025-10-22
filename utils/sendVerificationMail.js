@@ -15,9 +15,11 @@ export async function sendVerificationMail(user, is_dummy = true) {
 
     // only send mail when not dummy else just return the token for testing sake
     if (!is_dummy) {
+      console.log("recepient iemail:", user.email);
       await sendEmail(
         user.email,
-        `Your verification code is ${code}. Please do not share this with anyone.`
+        "Email Confirmation",
+        `Your verificaxtion code is ${code}. Please do not share this with anyone.`
       );
     }
     return { token: code };

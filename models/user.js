@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
-import { sendVerificationMail } from "../utils/sendVerificationMail";
+import { sendVerificationMail } from "../utils/sendVerificationMail.js";
 const groupSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
   permissions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Permission" }],
@@ -36,6 +36,9 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// create a compound unique index
+userSchema.index({ first_name: 1, last_name: 1 }, { unique: true });
+
 // used to hash reset password, turn out to work even when not password changed
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
@@ -44,16 +47,22 @@ userSchema.pre("save", async function (next) {
   }
   console.log("password reset request made");
   this.password = await bcrypt.hash(this.password, 10);
+  this.is_new = true; //temp field used to check if user is just created, it exist only in memory not in db
   next();
 });
 
 // post save hook to send email confirmation
 userSchema.post("save", async function (doc, next) {
+  console.log("hello from post save hook, isNew:", doc.is_new);
   // check if new user
-  if (this.isModified("email") && this.is_active == false) {
+  if (doc.is_new && doc.is_active == false) {
     console.log("new user created");
-    // await sendVerificationMail(this)
+    sendVerificationMail(doc, false)
+      .then((token) => console.log("token is:", token))
+      .catch((err) => console.log(err));
   }
+  doc.is_new = false;
+  next();
 });
 // user profile schema
 

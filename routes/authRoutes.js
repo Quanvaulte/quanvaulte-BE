@@ -69,8 +69,9 @@ router.post("/register", async (req, res) => {
     });
 
     // send email confirmation to mail... moved this to post save hook for better code performance
-    // await sendVerificationMail(user);
+    const token = await sendVerificationMail(user);
     res.status(201).json({
+      ...token,
       msg: "user created, check mail for email confirmation",
       userId: user.id,
     });
@@ -236,9 +237,11 @@ router.post("/forgot-password", async (req, res) => {
       return res.status(400).json({ error: "Email does not exist" });
     }
 
-    await sendVerificationMail(user);
+    const token = await sendVerificationMail(user, false);
 
-    res.status(200).json({ msg: "Check your email for verification code" });
+    res
+      .status(200)
+      .json({ ...token, msg: "Check your email for verification code" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ msg: "An error occurred", error: error.message });
