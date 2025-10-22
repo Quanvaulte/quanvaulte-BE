@@ -237,7 +237,7 @@ router.post("/forgot-password", async (req, res) => {
       return res.status(400).json({ error: "Email does not exist" });
     }
 
-    const token = await sendVerificationMail(user, false);
+    const token = await sendVerificationMail(user);
 
     res
       .status(200)
